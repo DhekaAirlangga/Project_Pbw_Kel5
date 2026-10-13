@@ -1,8 +1,10 @@
-
 <?php
 // ==========================================
 // SISTEM PARKIR KENDARAAN
 // ==========================================
+
+session_start();
+require_once "functions.php";
 
 // TODO: Teman kelompok mengerjakan:
 // 1. Function hitungBiayaParkir().
@@ -15,35 +17,22 @@
 
 // Data berikut hanya contoh tampilan.
 // TODO: Ganti dengan data kendaraan hasil proses PHP.
-$dataKendaraan = [
-    [
-        "plat" => "B 1234 ABC",
-        "tipe" => "Mobil",
-        "masuk" => "08:00",
-        "durasi" => "3 jam",
-        "biaya" => 15000,
-        "status" => "Parkir"
-    ],
-    [
-        "plat" => "F 5678 XYZ",
-        "tipe" => "Motor",
-        "masuk" => "09:15",
-        "durasi" => "2 jam",
-        "biaya" => 4000,
-        "status" => "Parkir"
-    ],
-    [
-        "plat" => "B 9012 DEF",
-        "tipe" => "Mobil",
-        "masuk" => "07:30",
-        "durasi" => "4 jam",
-        "biaya" => 20000,
-        "status" => "Keluar"
-    ]
-];
+$dataKendaraan = $_SESSION["kendaraan"] ?? dataContoh();
 
-// TODO: Hitung statistik dan total pendapatan
-// berdasarkan data parkir yang sebenarnya.
+// Hitung biaya tiap kendaraan lewat function
+// (supaya tetap benar walau data tidak membawa kolom biaya)
+foreach ($dataKendaraan as &$k) {
+    $k["biaya"] = hitungBiayaParkir($k["tipe"], $k["durasi"]);
+}
+unset($k);
+
+// Statistik dashboard dihitung dari data (function Developer A)
+$stat = hitungStatistik($dataKendaraan);
+
+// Pesan dari proses.php (tampil sekali, lalu dihapus)
+$pesanError  = $_SESSION["error"]  ?? [];
+$pesanSukses = $_SESSION["sukses"] ?? "";
+unset($_SESSION["error"], $_SESSION["sukses"]);
 ?>
 
 <!DOCTYPE html>
@@ -293,6 +282,16 @@ $dataKendaraan = [
                 font-size: 23px;
             }
         }
+
+        .alert {
+            padding: 14px 18px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .alert-error { background: #fee2e2; color: #991b1b; }
+        .alert-sukses { background: #dcfce7; color: #166534; }
     </style>
 </head>
 
@@ -314,6 +313,21 @@ $dataKendaraan = [
 
     <main class="container">
 
+        <!-- PESAN HASIL PROSES -->
+        <?php if ($pesanSukses !== ""): ?>
+            <div class="alert alert-sukses">
+                <?= htmlspecialchars($pesanSukses) ?>
+            </div>
+        <?php endif; ?>
+
+        <?php if (count($pesanError) > 0): ?>
+            <div class="alert alert-error">
+                <?php foreach ($pesanError as $pesan): ?>
+                    <div>• <?= htmlspecialchars($pesan) ?></div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
         <!-- DASHBOARD -->
         <section class="header" id="dashboard">
             <div>
@@ -328,19 +342,19 @@ $dataKendaraan = [
         <section class="stats">
             <div class="stat-card">
                 <p>Total Kendaraan</p>
-                <h2>3</h2>
+                <h2><?= $stat["total"] ?></h2>
                 <!-- TODO: Tampilkan jumlah kendaraan dari data sebenarnya. -->
             </div>
 
             <div class="stat-card">
                 <p>Kendaraan Sedang Parkir</p>
-                <h2>2</h2>
+                <h2><?= $stat["sedangParkir"] ?></h2>
                 <!-- TODO: Hitung kendaraan dengan status Parkir. -->
             </div>
 
             <div class="stat-card">
                 <p>Total Pendapatan</p>
-                <h2>Rp 39.000</h2>
+                <h2><?= formatRupiah($stat["pendapatan"]) ?></h2>
                 <!-- TODO: Hitung pendapatan dari transaksi selesai. -->
             </div>
         </section>
@@ -351,7 +365,7 @@ $dataKendaraan = [
 
             <!-- TODO: Teman menghubungkan form dengan proses
                  input, validasi, dan penyimpanan data. -->
-            <form action="#" method="post">
+            <form action="proses.php" method="post">
 
                 <div class="form-grid">
                     <div class="form-group">
@@ -404,7 +418,7 @@ $dataKendaraan = [
                 <div class="form-actions">
                     <!-- Tombol belum memproses data.
                          TODO: Hubungkan ke logic teman. -->
-                    <button type="button" class="button">
+                    <button type="submit" class="button">
                         + Tambah Kendaraan
                     </button>
 
@@ -454,12 +468,10 @@ $dataKendaraan = [
                                     <?= htmlspecialchars($kendaraan["masuk"]) ?>
                                 </td>
                                 <td>
-                                    <?= htmlspecialchars($kendaraan["durasi"]) ?>
+                                    <?= formatDurasi($kendaraan["durasi"]) ?>
                                 </td>
                                 <td>
-                                    Rp <?= number_format(
-                                        $kendaraan["biaya"], 0, ',', '.'
-                                    ) ?>
+                                    <?= formatRupiah($kendaraan["biaya"]) ?>
                                 </td>
                                 <td>
                                     <span class="status <?= $kendaraan["status"] === "Parkir"
@@ -510,6 +522,18 @@ $dataKendaraan = [
     <footer class="footer">
         Sistem Parkir Kendaraan · Pemrograman Berbasis Web · UTS
     </footer>
+
+    <!-- Isi kolom tarif otomatis (tarif diambil dari PHP: ambilTarif) -->
+    <script>
+        const tarifPerJam = {
+            Motor: <?= ambilTarif("Motor") ?>,
+            Mobil: <?= ambilTarif("Mobil") ?>
+        };
+
+        document.getElementById("tipe").addEventListener("change", function () {
+            document.getElementById("tarif").value = tarifPerJam[this.value] ?? "";
+        });
+    </script>
 
 </body>
 </html>
