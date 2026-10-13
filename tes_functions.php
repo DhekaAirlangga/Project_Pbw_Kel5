@@ -3,6 +3,7 @@
 // Buka lewat browser: http://localhost/project_parkir/tes_functions.php
 // Berguna untuk Tester & sebagai bukti screenshot.
 require_once "functions.php";
+require_once "classes/Kendaraan.php";
 
 // Demo 5 tipe data (P3)
 $demoString = "B 1234 ABC";   // string
@@ -17,6 +18,32 @@ $kasusUji = [
     ["B9012DEF",    "Mobil", "10"],  // kena diskon
     ["123",         "Truk",  "0"],   // semua tidak valid
 ];
+
+
+// Demo DO-WHILE (P6): simulasi pengguna mengulang input durasi sampai valid.
+// Pada aplikasi web asli, pengguna mengulang pengisian melalui form setelah pesan validasi.
+$percobaanDurasi = [0, 25, 3];
+$posisiDurasi = 0;
+$durasiDiterima = null;
+$hasilPercobaan = [];
+
+do {
+    $nilaiDurasi = $percobaanDurasi[$posisiDurasi];
+    $valid = validasiDurasi((string) $nilaiDurasi);
+    $hasilPercobaan[] = [
+        'nilai' => $nilaiDurasi,
+        'valid' => $valid,
+    ];
+    if ($valid) {
+        $durasiDiterima = (int) $nilaiDurasi;
+        break;
+    }
+    $posisiDurasi++;
+} while ($posisiDurasi < count($percobaanDurasi));
+
+// Demo class/object (P2).
+$demoKendaraan = new Kendaraan('b1234abc', 'Motor', 3);
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -67,5 +94,24 @@ $kasusUji = [
     <pre><?php
     var_dump($demoString, $demoInt, $demoFloat, $demoBool, $demoArray);
     ?></pre>
+
+    <h3>Demo DO-WHILE: Input Ulang Durasi</h3>
+    <p>Program mencoba durasi contoh secara berurutan sampai menemukan nilai valid.</p>
+    <table>
+        <tr><th>Percobaan</th><th>Durasi</th><th>Hasil Validasi</th></tr>
+        <?php for ($i = 0; $i < count($hasilPercobaan); $i++): ?>
+            <tr>
+                <td><?= $i + 1 ?></td>
+                <td><?= htmlspecialchars((string) $hasilPercobaan[$i]['nilai']) ?> jam</td>
+                <td class="<?= $hasilPercobaan[$i]['valid'] ? 'ok' : 'gagal' ?>">
+                    <?= $hasilPercobaan[$i]['valid'] ? 'Valid' : 'Tidak valid, coba ulang' ?>
+                </td>
+            </tr>
+        <?php endfor; ?>
+    </table>
+    <p>Durasi valid yang diterima: <strong><?= $durasiDiterima === null ? 'Belum ada' : $durasiDiterima . ' jam' ?></strong></p>
+
+    <h3>Demo Class dan Object Kendaraan</h3>
+    <p>Object <?= htmlspecialchars($demoKendaraan->getPlat()) ?> (<?= htmlspecialchars($demoKendaraan->getTipe()) ?>), durasi <?= $demoKendaraan->getDurasi() ?> jam, biaya <?= htmlspecialchars(formatRupiah($demoKendaraan->getBiaya())) ?>.</p>
 </body>
 </html>
