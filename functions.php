@@ -12,6 +12,10 @@ const TARIF_PER_JAM = [
 const BATAS_DISKON_JAM = 10;
 const PERSEN_DISKON = 10;
 const DURASI_MAKSIMAL = 24;
+const KAPASITAS_PARKIR = [
+    'Mobil' => 75,
+    'Motor' => 150,
+];
 
 // Mengambil tarif per jam sesuai tipe kendaraan.
 function ambilTarif(string $tipe): int
@@ -79,6 +83,29 @@ function formatDurasi(int $jam): string
     return $jam . ' jam';
 }
 
+// Setiap bagian jam yang sudah dimulai dihitung sebagai satu jam parkir.
+function hitungDurasiParkir(int $masukEpoch, int $keluarEpoch): int
+{
+    return max(1, (int) ceil(max(0, $keluarEpoch - $masukEpoch) / 3600));
+}
+
+function hitungKetersediaanParkir(array $data): array
+{
+    $ketersediaan = [];
+    foreach (KAPASITAS_PARKIR as $tipe => $kapasitas) {
+        $terpakai = count(array_filter($data, fn($kendaraan) =>
+            ($kendaraan['status'] ?? '') === 'Parkir' && ($kendaraan['tipe'] ?? '') === $tipe
+        ));
+        $ketersediaan[$tipe] = [
+            'kapasitas' => $kapasitas,
+            'terpakai' => $terpakai,
+            'tersedia' => max(0, $kapasitas - $terpakai),
+        ];
+    }
+
+    return $ketersediaan;
+}
+
 // Statistik: pendapatan hanya menghitung kendaraan berstatus Keluar.
 function hitungStatistik(array $data): array
 {
@@ -96,18 +123,37 @@ function hitungStatistik(array $data): array
 // Data contoh agar halaman tetap memiliki data saat pertama dibuka.
 function dataContoh(): array
 {
+    $waktuSekarang = time();
+    $mobilMasukEpoch = $waktuSekarang - (2 * 3600 + 30 * 60);
+    $motorMasukEpoch = $waktuSekarang - (1 * 3600 + 30 * 60);
+    $mobilKeluarMasukEpoch = $waktuSekarang - (3 * 3600 + 30 * 60);
+
     return [
         [
-            'plat' => 'B 1234 ABC', 'tipe' => 'Mobil', 'masuk' => '08:00',
-            'durasi' => 3, 'biaya' => hitungBiayaParkir('Mobil', 3), 'status' => 'Parkir'
+            'plat' => 'B 1234 ABC', 'tipe' => 'Mobil',
+            'masuk' => date('Y-m-d H:i:s', $mobilMasukEpoch),
+            'masukEpoch' => $mobilMasukEpoch,
+            'durasi' => hitungDurasiParkir($mobilMasukEpoch, $waktuSekarang),
+            'biaya' => hitungBiayaParkir('Mobil', hitungDurasiParkir($mobilMasukEpoch, $waktuSekarang)),
+            'status' => 'Parkir'
         ],
         [
-            'plat' => 'F 5678 XYZ', 'tipe' => 'Motor', 'masuk' => '09:15',
-            'durasi' => 2, 'biaya' => hitungBiayaParkir('Motor', 2), 'status' => 'Parkir'
+            'plat' => 'F 5678 XYZ', 'tipe' => 'Motor',
+            'masuk' => date('Y-m-d H:i:s', $motorMasukEpoch),
+            'masukEpoch' => $motorMasukEpoch,
+            'durasi' => hitungDurasiParkir($motorMasukEpoch, $waktuSekarang),
+            'biaya' => hitungBiayaParkir('Motor', hitungDurasiParkir($motorMasukEpoch, $waktuSekarang)),
+            'status' => 'Parkir'
         ],
         [
-            'plat' => 'B 9012 DEF', 'tipe' => 'Mobil', 'masuk' => '07:30',
-            'durasi' => 4, 'biaya' => hitungBiayaParkir('Mobil', 4), 'status' => 'Keluar', 'keluar' => '11:30'
+            'plat' => 'B 9012 DEF', 'tipe' => 'Mobil',
+            'masuk' => date('Y-m-d H:i:s', $mobilKeluarMasukEpoch),
+            'masukEpoch' => $mobilKeluarMasukEpoch,
+            'durasi' => hitungDurasiParkir($mobilKeluarMasukEpoch, $waktuSekarang),
+            'biaya' => hitungBiayaParkir('Mobil', hitungDurasiParkir($mobilKeluarMasukEpoch, $waktuSekarang)),
+            'status' => 'Keluar',
+            'keluar' => date('Y-m-d H:i:s', $waktuSekarang),
+            'keluarEpoch' => $waktuSekarang
         ],
     ];
 }

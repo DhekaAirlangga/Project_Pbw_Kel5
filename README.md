@@ -60,7 +60,7 @@ Aplikasi ini dibuat sebagai penerapan materi Pemrograman Berbasis Web, meliputi 
 
 Halaman utama menampilkan statistik kendaraan, informasi tarif, formulir input, dan tabel data parkir.
 
-Pengguna dapat memasukkan nomor polisi, memilih jenis kendaraan, serta menentukan estimasi durasi parkir. Data kemudian dikirim ke `proses.php` untuk divalidasi dan diproses.
+Pengguna dapat memasukkan nomor polisi dan memilih jenis kendaraan. Waktu parkir dicatat otomatis berdasarkan jam lokal perangkat; durasi dan biaya dihitung ketika kendaraan keluar.
 
 ### 2. Normalisasi dan Validasi Nomor Polisi
 
@@ -73,18 +73,18 @@ Input  : b1234abc
 Output : B 1234 ABC
 ```
 
-Sistem juga memvalidasi format nomor polisi, jenis kendaraan, dan durasi parkir sebelum data diterima.
+Sistem juga memvalidasi format nomor polisi dan jenis kendaraan sebelum data diterima.
 
 ### 3. Perhitungan Biaya Parkir
 
-Tarif parkir ditentukan berdasarkan jenis kendaraan dan durasi yang dimasukkan.
+Tarif parkir ditentukan berdasarkan jenis kendaraan dan durasi aktual.
 
 | Jenis Kendaraan | Tarif per Jam |
 |---|---:|
 | Motor | Rp2.000 |
 | Mobil | Rp5.000 |
 
-Durasi parkir minimal adalah 1 jam dan maksimal 24 jam. Diskon sebesar 10% diberikan untuk durasi minimal 10 jam.
+Durasi dibulatkan ke atas per jam yang mulai digunakan, dengan minimal 1 jam. Diskon sebesar 10% diberikan untuk durasi minimal 10 jam; durasi tidak dibatasi 24 jam.
 
 Contoh perhitungan:
 
@@ -92,13 +92,13 @@ Contoh perhitungan:
 - Mobil selama 2 jam: Rp10.000.
 - Motor selama 10 jam: Rp18.000 setelah diskon 10%.
 
-Perhitungan tersebut menggunakan durasi simulasi yang dimasukkan saat kendaraan ditambahkan.
+Perhitungan tersebut menggunakan durasi aktual sejak kendaraan masuk hingga keluar.
 
 ### 4. Data Kendaraan dan Proses Keluar
 
-Tabel kendaraan menampilkan nomor polisi, jenis kendaraan, waktu masuk, durasi, biaya, dan status parkir.
+Form tidak meminta estimasi durasi maupun menampilkan jam masuk. Waktu masuk dan keluar dicatat otomatis dari jam lokal perangkat yang mengirimkan transaksi. Durasi dihitung dari selisih waktu masuk dan keluar; setiap bagian jam yang sudah dimulai dihitung sebagai satu jam. Tabel kendaraan menampilkan nomor polisi, jenis kendaraan, jam masuk, jam keluar (setelah admin mencatat kendaraan keluar), durasi berjalan/aktual, biaya, dan status parkir.
 
-Tombol **Keluar** memproses kendaraan melalui `keluar.php`. Sistem mengubah status kendaraan menjadi `Keluar`, mencatat waktu keluar, dan menghitung kembali biaya berdasarkan durasi simulasi.
+Tombol **Keluar** memproses kendaraan melalui `keluar.php`. Sistem mengubah status kendaraan menjadi `Keluar`, mencatat waktu lokal perangkat saat keluar, menghitung durasi aktual, dan menghitung biaya akhir.
 
 Sistem juga mencegah kendaraan dengan nomor polisi yang sama ditambahkan kembali ketika kendaraan tersebut masih berstatus `Parkir`.
 
@@ -180,9 +180,9 @@ Pengujian berikut dapat dilakukan melalui browser setelah aplikasi dijalankan.
 ## ⚠️ Catatan dan Batasan Aplikasi
 
 1. Aplikasi menggunakan PHP Session untuk menyimpan data, sehingga belum menggunakan database permanen.
-2. Durasi parkir merupakan durasi simulasi yang dimasukkan saat kendaraan ditambahkan.
-3. Waktu masuk dan keluar dicatat oleh server dalam format jam dan menit.
-4. Biaya akhir dihitung menggunakan durasi simulasi, bukan selisih waktu masuk dan keluar aktual.
+2. Durasi parkir dihitung otomatis dari waktu masuk hingga waktu keluar, dengan pembulatan ke atas untuk setiap jam yang mulai digunakan.
+3. Waktu masuk dan keluar dicatat otomatis berdasarkan jam lokal perangkat pengguna.
+4. Biaya akhir dihitung menggunakan durasi aktual berdasarkan selisih waktu masuk dan keluar.
 5. Kapasitas slot parkir dan pembaruan durasi secara real-time belum dicantumkan sebagai fitur karena belum terkonfirmasi pada source code yang diperiksa.
 
 ---

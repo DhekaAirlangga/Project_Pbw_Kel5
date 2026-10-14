@@ -3,6 +3,19 @@ session_start();
 require_once __DIR__ . '/functions.php';
 
 $dataKendaraan = $_SESSION['kendaraan'] ?? dataContoh();
+$waktuSekarang = time();
+for ($i = 0; $i < count($dataKendaraan); $i++) {
+    if ($dataKendaraan[$i]['status'] === 'Parkir' && isset($dataKendaraan[$i]['masukEpoch'])) {
+        $dataKendaraan[$i]['durasi'] = hitungDurasiParkir(
+            (int) $dataKendaraan[$i]['masukEpoch'],
+            $waktuSekarang
+        );
+        $dataKendaraan[$i]['biaya'] = hitungBiayaParkir(
+            $dataKendaraan[$i]['tipe'],
+            (int) $dataKendaraan[$i]['durasi']
+        );
+    }
+}
 $stat = hitungStatistik($dataKendaraan);
 $filter = $_GET['status'] ?? 'Semua';
 if (!in_array($filter, ['Semua', 'Parkir', 'Keluar'], true)) {
@@ -55,10 +68,10 @@ function e($value): string { return htmlspecialchars((string) $value, ENT_QUOTES
         </form>
         <div class="table-wrapper">
         <table>
-            <thead><tr><th>No.</th><th>Plat Nomor</th><th>Tipe</th><th>Jam Masuk</th><th>Jam Keluar</th><th>Durasi</th><th>Biaya</th><th>Status</th></tr></thead>
+            <thead><tr><th>No.</th><th>Plat Nomor</th><th>Tipe</th><th>Waktu Keluar (Lokal)</th><th>Durasi</th><th>Biaya</th><th>Status</th></tr></thead>
             <tbody>
             <?php if (count($dataLaporan) === 0): ?>
-                <tr><td colspan="8" style="text-align:center;padding:24px;">Tidak ada data untuk filter ini.</td></tr>
+                <tr><td colspan="7" style="text-align:center;padding:24px;">Tidak ada data untuk filter ini.</td></tr>
             <?php else: ?>
                 <?php
                 // DO-WHILE: menampilkan laporan minimal satu kali ketika data tersedia.
@@ -71,7 +84,6 @@ function e($value): string { return htmlspecialchars((string) $value, ENT_QUOTES
                     <td><?= $i + 1 ?></td>
                     <td><?= e($kendaraan['plat']) ?></td>
                     <td><?= e($kendaraan['tipe']) ?></td>
-                    <td><?= e($kendaraan['masuk']) ?></td>
                     <td><?= e($kendaraan['keluar'] ?? '-') ?></td>
                     <td><?= formatDurasi((int) $kendaraan['durasi']) ?></td>
                     <td><?= formatRupiah((int) $kendaraan['biaya']) ?></td>
@@ -89,9 +101,9 @@ function e($value): string { return htmlspecialchars((string) $value, ENT_QUOTES
     </section>
     <section class="panel">
         <h2>Ringkasan Pendapatan</h2>
-        <div class="row"><span>Total kendaraan selesai</span><strong><?= $stat['keluar'] ?> kendaraan</strong></div>
-        <div class="row"><span>Total pendapatan kendaraan keluar</span><strong><?= formatRupiah($stat['pendapatan']) ?></strong></div>
-        <p class="muted" style="font-size:12px;line-height:1.6;margin-top:15px;">Catatan: durasi pada project ini merupakan durasi simulasi yang dimasukkan saat kendaraan masuk, bukan selisih waktu masuk dan keluar aktual.</p>
+        <div class="row"><span>Total kendaraan selesai </span><strong><?= $stat['keluar'] ?> kendaraan</strong></div>
+        <div class="row"><span>Total pendapatan kendaraan keluar </span><strong><?= formatRupiah($stat['pendapatan']) ?></strong></div>
+        <p class="muted" style="font-size:12px;line-height:1.6;margin-top:15px;">Durasi dihitung otomatis dari waktu masuk hingga kendaraan keluar. Setiap bagian jam yang sudah dimulai dihitung sebagai satu jam.</p>
     </section>
 </main>
 <footer class="footer">PARKIRKU · Laporan Parkir</footer>
