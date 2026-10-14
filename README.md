@@ -10,7 +10,7 @@ Aplikasi web sederhana untuk pengelolaan kendaraan masuk, durasi, perhitungan bi
 1. **Bryan Ananda Saputra Hulu** (4524210020)
 2. **Dheka Airlangga** (45242100)
 3. **Farhan Ridwan** (4524210037)
-4. **Muhammad Bachtiar** (4524210141)
+4. **Muhamad Bachtiar** (4524210141)
 
 ---
 
