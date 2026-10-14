@@ -198,9 +198,9 @@ Tambahkan screenshot asli dari aplikasi ke folder `screenshots/`, lalu gunakan n
 3. `validasi-error.png` — pesan kesalahan input.
 <img src="screenshots/03-validasi-error.jpeg" alt="Screenshot Sebelum" width="600">
 4. `kendaraan-keluar.png` — hasil proses kendaraan keluar.
-<img src="screenshots/06-laporan" alt="Screenshot Sebelum" width="600">
+<img src="screenshots/04-kendaraan-keluar.png" alt="Screenshot Sebelum" width="600">
 5. `laporan.png` — tampilan laporan parkir.
-<img src="screenshots/sebelumEdit.png" alt="Screenshot Sebelum" width="600">
+<img src="screenshots/06-laporan.jpeg" alt="Screenshot Sebelum" width="600">
 6. `testing-fungsi.png` — hasil pengujian fungsi pada `tes_functions.php`.
 <img src="screenshots/05-output-loop.png" alt="Screenshot Sebelum" width="600">
 
