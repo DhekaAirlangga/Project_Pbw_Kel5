@@ -11,9 +11,14 @@ const TARIF_PER_JAM = [
     "Motor" => 2000,
     "Mobil" => 5000,
 ];
+const KAPASITAS_PARKIR = [
+    "Motor" => 50,
+    "Mobil" => 20,
+];
 const BATAS_DISKON_JAM = 10;   // durasi minimal untuk dapat diskon
 const PERSEN_DISKON    = 10;   // diskon 10%
 const DURASI_MAKSIMAL  = 24;   // batas wajar durasi parkir (jam)
+const ZONA_WAKTU       = "Asia/Jakarta";
 
 // ---------- FUNCTION 1: tarif per jam ----------
 // Mengambil tarif berdasarkan tipe kendaraan.
@@ -37,6 +42,86 @@ function hitungBiayaParkir(string $tipe, int $durasi): int
         : 0;
 
     return (int) round($total - $diskon);
+}
+
+function waktuSekarang(): DateTimeImmutable
+{
+    return new DateTimeImmutable("now", new DateTimeZone(ZONA_WAKTU));
+}
+
+function formatTimestamp(string $timestamp): string
+{
+    return (new DateTimeImmutable($timestamp))
+        ->setTimezone(new DateTimeZone(ZONA_WAKTU))
+        ->format("d/m/Y H:i:s");
+}
+
+function hitungDurasiMenit(string $masukAt, ?string $keluarAt = null): int
+{
+    $mulai = new DateTimeImmutable($masukAt);
+    $selesai = $keluarAt === null
+        ? waktuSekarang()
+        : new DateTimeImmutable($keluarAt);
+    $detik = max(0, $selesai->getTimestamp() - $mulai->getTimestamp());
+
+    return (int) ceil($detik / 60);
+}
+
+function hitungJamTagihan(int $durasiMenit): int
+{
+    return max(1, (int) ceil(max(0, $durasiMenit) / 60));
+}
+
+function hitungBiayaParkirMenit(string $tipe, int $durasiMenit): int
+{
+    return hitungBiayaParkir($tipe, hitungJamTagihan($durasiMenit));
+}
+
+function formatDurasiMenit(int $durasiMenit): string
+{
+    $jam = intdiv($durasiMenit, 60);
+    $menit = $durasiMenit % 60;
+
+    if ($jam === 0) {
+        return $menit . " menit";
+    }
+
+    return $jam . " jam" . ($menit > 0 ? " " . $menit . " menit" : "");
+}
+
+function normalisasiDataKendaraan(array $data): array
+{
+    foreach ($data as &$kendaraan) {
+        if (!isset($kendaraan["masukAt"])) {
+            // Data sesi lama hanya menyimpan durasi manual; pertahankan sebagai perkiraan.
+            $jamLama = max(1, (int) ($kendaraan["durasi"] ?? 1));
+            $kendaraan["masukAt"] = waktuSekarang()
+                ->modify("-" . $jamLama . " hours")
+                ->format(DateTimeInterface::ATOM);
+        }
+
+        $kendaraan["status"] = $kendaraan["status"] ?? "Parkir";
+        $kendaraan["keluarAt"] = $kendaraan["keluarAt"] ?? null;
+
+        if ($kendaraan["status"] === "Keluar" && $kendaraan["keluarAt"] === null) {
+            $durasiLama = max(1, (int) ($kendaraan["durasi"] ?? 1));
+            $kendaraan["keluarAt"] = (new DateTimeImmutable($kendaraan["masukAt"]))
+                ->modify("+" . $durasiLama . " hours")
+                ->format(DateTimeInterface::ATOM);
+        }
+
+        $kendaraan["durasiMenit"] = hitungDurasiMenit(
+            $kendaraan["masukAt"],
+            $kendaraan["status"] === "Keluar" ? $kendaraan["keluarAt"] : null
+        );
+        $kendaraan["jamTagihan"] = hitungJamTagihan($kendaraan["durasiMenit"]);
+        $kendaraan["biaya"] = $kendaraan["status"] === "Keluar"
+            ? hitungBiayaParkirMenit($kendaraan["tipe"], $kendaraan["durasiMenit"])
+            : 0;
+    }
+    unset($kendaraan);
+
+    return array_values($data);
 }
 
 // ---------- FUNCTION 3: normalisasi plat nomor ----------
@@ -83,6 +168,34 @@ function validasiTipe(string $tipe): bool
     return array_key_exists($tipe, TARIF_PER_JAM);
 }
 
+function hitungSlotParkir(array $data): array
+{
+    $slot = [];
+    foreach (KAPASITAS_PARKIR as $tipe => $kapasitas) {
+        $slot[$tipe] = [
+            "kapasitas" => $kapasitas,
+            "terisi" => 0,
+            "tersisa" => $kapasitas,
+            "penuh" => false,
+        ];
+    }
+
+    foreach ($data as $kendaraan) {
+        $tipe = $kendaraan["tipe"] ?? "";
+        if (($kendaraan["status"] ?? "") === "Parkir" && isset($slot[$tipe])) {
+            $slot[$tipe]["terisi"]++;
+        }
+    }
+
+    foreach ($slot as &$rincian) {
+        $rincian["tersisa"] = max(0, $rincian["kapasitas"] - $rincian["terisi"]);
+        $rincian["penuh"] = $rincian["tersisa"] === 0;
+    }
+    unset($rincian);
+
+    return $slot;
+}
+
 // ---------- FUNCTION 7: format tampilan ----------
 function formatRupiah(int $angka): string
 {
@@ -92,6 +205,57 @@ function formatRupiah(int $angka): string
 function formatDurasi(int $jam): string
 {
     return $jam . " jam";
+}
+
+// ---------- CLASS KENDARAAN ----------
+class Kendaraan
+{
+    public string $plat;
+    public string $tipe;
+    public string $masukAt;
+    public ?string $keluarAt;
+    public int $durasiMenit;
+    public int $jamTagihan;
+    public int $biaya;
+    public string $status;
+
+    public function __construct(
+        string $plat,
+        string $tipe,
+        ?string $masukAt = null
+    ) {
+        $this->plat = normalisasiPlat($plat);
+        $this->tipe = $tipe;
+        $this->masukAt = $masukAt ?? waktuSekarang()->format(DateTimeInterface::ATOM);
+        $this->keluarAt = null;
+        $this->durasiMenit = 0;
+        $this->jamTagihan = 0;
+        $this->biaya = 0;
+        $this->status = "Parkir";
+    }
+
+    public function selesaikan(?string $keluarAt = null): void
+    {
+        $this->keluarAt = $keluarAt ?? waktuSekarang()->format(DateTimeInterface::ATOM);
+        $this->durasiMenit = hitungDurasiMenit($this->masukAt, $this->keluarAt);
+        $this->jamTagihan = hitungJamTagihan($this->durasiMenit);
+        $this->biaya = hitungBiayaParkirMenit($this->tipe, $this->durasiMenit);
+        $this->status = "Keluar";
+    }
+
+    public function toArray(): array
+    {
+        return [
+            "plat" => $this->plat,
+            "tipe" => $this->tipe,
+            "masukAt" => $this->masukAt,
+            "keluarAt" => $this->keluarAt,
+            "durasiMenit" => $this->durasiMenit,
+            "jamTagihan" => $this->jamTagihan,
+            "biaya" => $this->biaya,
+            "status" => $this->status,
+        ];
+    }
 }
 
 // ---------- FUNCTION 8: statistik dashboard ----------
@@ -114,12 +278,27 @@ function hitungStatistik(array $data): array
 // Biaya dihitung oleh hitungBiayaParkir(), bukan ditulis manual.
 function dataContoh(): array
 {
+    $sekarang = waktuSekarang();
+    $mobilParkir = new Kendaraan(
+        "B 1234 ABC",
+        "Mobil",
+        $sekarang->modify("-3 hours")->format(DateTimeInterface::ATOM)
+    );
+    $motorParkir = new Kendaraan(
+        "F 5678 XYZ",
+        "Motor",
+        $sekarang->modify("-2 hours -15 minutes")->format(DateTimeInterface::ATOM)
+    );
+    $mobilKeluar = new Kendaraan(
+        "B 9012 DEF",
+        "Mobil",
+        $sekarang->modify("-5 hours")->format(DateTimeInterface::ATOM)
+    );
+    $mobilKeluar->selesaikan($sekarang->modify("-45 minutes")->format(DateTimeInterface::ATOM));
+
     return [
-        ["plat" => "B 1234 ABC", "tipe" => "Mobil", "masuk" => "08:00", "durasi" => 3,
-         "biaya" => hitungBiayaParkir("Mobil", 3), "status" => "Parkir"],
-        ["plat" => "F 5678 XYZ", "tipe" => "Motor", "masuk" => "09:15", "durasi" => 2,
-         "biaya" => hitungBiayaParkir("Motor", 2), "status" => "Parkir"],
-        ["plat" => "B 9012 DEF", "tipe" => "Mobil", "masuk" => "07:30", "durasi" => 4,
-         "biaya" => hitungBiayaParkir("Mobil", 4), "status" => "Keluar"],
+        $mobilParkir->toArray(),
+        $motorParkir->toArray(),
+        $mobilKeluar->toArray(),
     ];
 }

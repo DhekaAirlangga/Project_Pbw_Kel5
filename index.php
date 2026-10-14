@@ -6,25 +6,8 @@
 session_start();
 require_once "functions.php";
 
-// TODO: Teman kelompok mengerjakan:
-// 1. Function hitungBiayaParkir().
-// 2. Class Kendaraan dan object.
-// 3. Validasi serta normalisasi plat nomor.
-// 4. Proses input dan penyimpanan kendaraan.
-// 5. Perulangan WHILE dan DO-WHILE.
-// 6. Perulangan FOR untuk laporan kendaraan.
-// 7. Perhitungan tarif, durasi, dan total pembayaran.
-
-// Data berikut hanya contoh tampilan.
-// TODO: Ganti dengan data kendaraan hasil proses PHP.
-$dataKendaraan = $_SESSION["kendaraan"] ?? dataContoh();
-
-// Hitung biaya tiap kendaraan lewat function
-// (supaya tetap benar walau data tidak membawa kolom biaya)
-foreach ($dataKendaraan as &$k) {
-    $k["biaya"] = hitungBiayaParkir($k["tipe"], $k["durasi"]);
-}
-unset($k);
+$dataKendaraan = normalisasiDataKendaraan($_SESSION["kendaraan"] ?? dataContoh());
+$slotParkir = hitungSlotParkir($dataKendaraan);
 
 // Statistik dashboard dihitung dari data (function Developer A)
 $stat = hitungStatistik($dataKendaraan);
@@ -133,6 +116,13 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
             margin-bottom: 25px;
         }
 
+        .capacity-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+
         .stat-card,
         .panel {
             background: white;
@@ -150,6 +140,15 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
         .stat-card h2 {
             font-size: 26px;
             color: #1d4ed8;
+        }
+
+        .slot-card h2 {
+            font-size: 22px;
+            color: #1d4ed8;
+        }
+
+        .slot-card.is-full h2 {
+            color: #b91c1c;
         }
 
         .panel {
@@ -208,6 +207,20 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
 
         .button-secondary {
             background: #475569;
+        }
+
+        .button-danger {
+            background: #dc2626;
+        }
+
+        .button-danger:hover {
+            background: #b91c1c;
+        }
+
+        .form-hint {
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 8px;
         }
 
         .form-actions {
@@ -274,6 +287,10 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
                 grid-template-columns: 1fr;
             }
 
+            .capacity-grid {
+                grid-template-columns: 1fr;
+            }
+
             .form-grid {
                 grid-template-columns: 1fr;
             }
@@ -307,7 +324,7 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
             <a href="#dashboard">Dashboard</a>
             <a href="#input-kendaraan">Input Kendaraan</a>
             <a href="#data-parkir">Data Parkir</a>
-            <a href="#laporan">Laporan</a>
+            <a href="laporan.php">Laporan</a>
         </nav>
     </header>
 
@@ -343,28 +360,40 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
             <div class="stat-card">
                 <p>Total Kendaraan</p>
                 <h2><?= $stat["total"] ?></h2>
-                <!-- TODO: Tampilkan jumlah kendaraan dari data sebenarnya. -->
             </div>
 
             <div class="stat-card">
                 <p>Kendaraan Sedang Parkir</p>
                 <h2><?= $stat["sedangParkir"] ?></h2>
-                <!-- TODO: Hitung kendaraan dengan status Parkir. -->
             </div>
 
             <div class="stat-card">
                 <p>Total Pendapatan</p>
                 <h2><?= formatRupiah($stat["pendapatan"]) ?></h2>
-                <!-- TODO: Hitung pendapatan dari transaksi selesai. -->
             </div>
+        </section>
+
+        <section class="capacity-grid" aria-label="Kapasitas slot parkir">
+            <?php foreach ($slotParkir as $tipeSlot => $rincianSlot): ?>
+                <div class="stat-card slot-card <?= $rincianSlot["penuh"] ? "is-full" : "" ?>">
+                    <p>Slot <?= htmlspecialchars($tipeSlot) ?></p>
+                    <h2>
+                        <?= $rincianSlot["penuh"]
+                            ? "Penuh"
+                            : "Tersisa: " . $rincianSlot["tersisa"] ?>
+                    </h2>
+                    <p>
+                        Terisi <?= $rincianSlot["terisi"] ?> dari
+                        <?= $rincianSlot["kapasitas"] ?> slot
+                    </p>
+                </div>
+            <?php endforeach; ?>
         </section>
 
         <!-- FORM INPUT KENDARAAN -->
         <section class="panel" id="input-kendaraan">
             <h2>Input Kendaraan</h2>
 
-            <!-- TODO: Teman menghubungkan form dengan proses
-                 input, validasi, dan penyimpanan data. -->
             <form action="proses.php" method="post">
 
                 <div class="form-grid">
@@ -384,22 +413,16 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
                         <label for="tipe">Tipe Kendaraan</label>
                         <select id="tipe" name="tipe" required>
                             <option value="">Pilih kendaraan</option>
-                            <option value="Motor">Motor</option>
-                            <option value="Mobil">Mobil</option>
+                            <?php foreach ($slotParkir as $tipeSlot => $rincianSlot): ?>
+                                <option
+                                    value="<?= htmlspecialchars($tipeSlot) ?>"
+                                    <?= $rincianSlot["penuh"] ? "disabled" : "" ?>
+                                >
+                                    <?= htmlspecialchars($tipeSlot) ?>
+                                    <?= $rincianSlot["penuh"] ? "(Penuh)" : "" ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="durasi">Durasi Parkir (jam)</label>
-                        <input
-                            type="number"
-                            id="durasi"
-                            name="durasi"
-                            min="1"
-                            placeholder="Masukkan durasi"
-                            required
-                        >
-                        <!-- TODO: Validasi durasi dan hitung biaya. -->
                     </div>
 
                     <div class="form-group">
@@ -411,14 +434,16 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
                             placeholder="Diisi berdasarkan tipe kendaraan"
                             readonly
                         >
-                        <!-- TODO: Isi tarif sesuai tipe kendaraan. -->
+                        <p class="form-hint">
+                            Waktu masuk dicatat otomatis saat kendaraan ditambahkan.
+                            Durasi dan biaya final dihitung saat kendaraan keluar.
+                        </p>
+                        <p class="form-hint" id="slot-warning" aria-live="polite"></p>
                     </div>
                 </div>
 
                 <div class="form-actions">
-                    <!-- Tombol belum memproses data.
-                         TODO: Hubungkan ke logic teman. -->
-                    <button type="submit" class="button">
+                    <button type="submit" class="button" id="tambah-kendaraan">
                         + Tambah Kendaraan
                     </button>
 
@@ -442,6 +467,7 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
                             <th>Nomor Plat</th>
                             <th>Tipe</th>
                             <th>Jam Masuk</th>
+                            <th>Jam Keluar</th>
                             <th>Durasi</th>
                             <th>Biaya</th>
                             <th>Status</th>
@@ -450,13 +476,24 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
                     </thead>
 
                     <tbody>
-                        <?php
-                        // TODO: Gunakan FOR untuk menampilkan data
-                        // kendaraan dari hasil proses yang sebenarnya.
-                        ?>
-
-                        <?php foreach ($dataKendaraan as $i => $kendaraan): ?>
-                            <tr>
+                        <?php $i = 0; ?>
+                        <?php while ($i < count($dataKendaraan)): ?>
+                            <?php $kendaraan = $dataKendaraan[$i]; ?>
+                            <?php
+                            $kendaraanKeluar = $kendaraan["status"] === "Keluar";
+                            $menitBerjalan = $kendaraanKeluar
+                                ? $kendaraan["durasiMenit"]
+                                : hitungDurasiMenit($kendaraan["masukAt"]);
+                            $biayaSaatIni = $kendaraanKeluar
+                                ? $kendaraan["biaya"]
+                                : hitungBiayaParkirMenit($kendaraan["tipe"], $menitBerjalan);
+                            ?>
+                            <tr
+                                class="kendaraan-row"
+                                data-masuk-at="<?= htmlspecialchars($kendaraan["masukAt"]) ?>"
+                                data-tipe="<?= htmlspecialchars($kendaraan["tipe"]) ?>"
+                                data-selesai="<?= $kendaraanKeluar ? "1" : "0" ?>"
+                            >
                                 <td><?= $i + 1 ?></td>
                                 <td>
                                     <?= htmlspecialchars($kendaraan["plat"]) ?>
@@ -465,13 +502,18 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
                                     <?= htmlspecialchars($kendaraan["tipe"]) ?>
                                 </td>
                                 <td>
-                                    <?= htmlspecialchars($kendaraan["masuk"]) ?>
+                                    <?= htmlspecialchars(formatTimestamp($kendaraan["masukAt"])) ?>
                                 </td>
                                 <td>
-                                    <?= formatDurasi($kendaraan["durasi"]) ?>
+                                    <?= $kendaraanKeluar && $kendaraan["keluarAt"] !== null
+                                        ? htmlspecialchars(formatTimestamp($kendaraan["keluarAt"]))
+                                        : "—" ?>
                                 </td>
                                 <td>
-                                    <?= formatRupiah($kendaraan["biaya"]) ?>
+                                    <span class="durasi-value"><?= htmlspecialchars(formatDurasiMenit($menitBerjalan)) ?></span>
+                                </td>
+                                <td>
+                                    <span class="biaya-value"><?= formatRupiah($biayaSaatIni) ?></span>
                                 </td>
                                 <td>
                                     <span class="status <?= $kendaraan["status"] === "Parkir"
@@ -481,14 +523,25 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
                                     </span>
                                 </td>
                                 <td>
-                                    <!-- TODO: Tambahkan aksi keluar kendaraan
-                                         dan hitung biaya akhir. -->
-                                    <button type="button" class="button">
-                                        Detail
-                                    </button>
+                                    <?php if ($kendaraan["status"] === "Parkir"): ?>
+                                        <form action="proses.php" method="post">
+                                            <input type="hidden" name="aksi" value="keluar">
+                                            <input type="hidden" name="indeks" value="<?= $i ?>">
+                                            <button type="submit" class="button button-danger">
+                                                Keluar
+                                            </button>
+                                        </form>
+                                    <?php else: ?>
+                                        <span>
+                                            <?= isset($kendaraan["keluar"])
+                                                ? "Keluar " . htmlspecialchars($kendaraan["keluar"])
+                                                : "Selesai" ?>
+                                        </span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
+                            <?php $i++; ?>
+                        <?php endwhile; ?>
                     </tbody>
                 </table>
             </div>
@@ -499,21 +552,17 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
             <h2>Laporan Parkir</h2>
 
             <p style="color: #64748b; line-height: 1.8;">
-                Bagian ini digunakan untuk melihat rekap kendaraan,
-                durasi parkir, dan total pembayaran.
+                Lihat rincian kendaraan, status parkir, durasi, dan total
+                pendapatan pada halaman laporan.
             </p>
-
-            <!-- TODO: Teman mengerjakan rekap biaya dan laporan
-                 menggunakan perulangan FOR. -->
             <div class="form-actions">
-                <a href="#data-parkir" class="button">
+                <a href="laporan.php" class="button">
                     Lihat Data Kendaraan
                 </a>
 
-                <button type="button" class="button button-secondary">
-                    Cetak Laporan
-                </button>
-                <!-- TODO: Hubungkan tombol cetak dengan laporan. -->
+                <a href="laporan.php" class="button button-secondary">
+                    Buka Laporan
+                </a>
             </div>
         </section>
 
@@ -529,10 +578,63 @@ unset($_SESSION["error"], $_SESSION["sukses"]);
             Motor: <?= ambilTarif("Motor") ?>,
             Mobil: <?= ambilTarif("Mobil") ?>
         };
+        const slotTersisa = <?= json_encode(
+            array_map(fn($rincian) => $rincian["tersisa"], $slotParkir),
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+        ) ?>;
+        const batasDiskonJam = <?= BATAS_DISKON_JAM ?>;
+        const persenDiskon = <?= PERSEN_DISKON ?>;
+        const pilihanTipe = document.getElementById("tipe");
+        const inputTarif = document.getElementById("tarif");
+        const tombolTambah = document.getElementById("tambah-kendaraan");
+        const peringatanSlot = document.getElementById("slot-warning");
 
-        document.getElementById("tipe").addEventListener("change", function () {
-            document.getElementById("tarif").value = tarifPerJam[this.value] ?? "";
+        function perbaruiPilihanSlot() {
+            const tipeTerpilih = pilihanTipe.value;
+            inputTarif.value = tarifPerJam[tipeTerpilih] ?? "";
+
+            if (tipeTerpilih && slotTersisa[tipeTerpilih] === 0) {
+                peringatanSlot.textContent = `Slot ${tipeTerpilih} penuh. Kendaraan tidak dapat ditambahkan.`;
+                tombolTambah.disabled = true;
+            } else {
+                peringatanSlot.textContent = tipeTerpilih
+                    ? `Slot ${tipeTerpilih} tersisa: ${slotTersisa[tipeTerpilih]}.`
+                    : "Pilih tipe kendaraan untuk melihat slot tersedia.";
+                tombolTambah.disabled = !tipeTerpilih;
+            }
+        }
+
+        pilihanTipe.addEventListener("change", perbaruiPilihanSlot);
+        perbaruiPilihanSlot();
+
+        const formatRupiah = new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            maximumFractionDigits: 0
         });
+
+        function perbaruiDurasiParkir() {
+            document.querySelectorAll(".kendaraan-row[data-selesai='0']").forEach((baris) => {
+                const masukMs = new Date(baris.dataset.masukAt).getTime();
+                const durasiMenit = Math.max(0, Math.ceil((Date.now() - masukMs) / 60000));
+                const jam = Math.floor(durasiMenit / 60);
+                const menit = durasiMenit % 60;
+                const durasiText = jam === 0
+                    ? `${menit} menit`
+                    : `${jam} jam${menit > 0 ? ` ${menit} menit` : ""}`;
+                const jamTagihan = Math.max(1, Math.ceil(durasiMenit / 60));
+                const total = jamTagihan * tarifPerJam[baris.dataset.tipe];
+                const biaya = jamTagihan >= batasDiskonJam
+                    ? Math.round(total * (100 - persenDiskon) / 100)
+                    : total;
+
+                baris.querySelector(".durasi-value").textContent = durasiText;
+                baris.querySelector(".biaya-value").textContent = formatRupiah.format(biaya);
+            });
+        }
+
+        perbaruiDurasiParkir();
+        window.setInterval(perbaruiDurasiParkir, 30000);
     </script>
 
 </body>
