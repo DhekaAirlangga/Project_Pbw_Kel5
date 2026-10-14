@@ -3,9 +3,16 @@ session_start();
 require_once __DIR__ . '/functions.php';
 
 $dataKendaraan = $_SESSION['kendaraan'] ?? dataContoh();
+$waktuSekarang = time();
 
-// Samakan biaya yang ditampilkan dengan aturan tarif aktif.
+// Tampilkan durasi dan estimasi biaya berjalan untuk kendaraan yang masih parkir.
 for ($i = 0; $i < count($dataKendaraan); $i++) {
+    if ($dataKendaraan[$i]['status'] === 'Parkir' && isset($dataKendaraan[$i]['masukEpoch'])) {
+        $dataKendaraan[$i]['durasi'] = hitungDurasiParkir(
+            (int) $dataKendaraan[$i]['masukEpoch'],
+            $waktuSekarang
+        );
+    }
     $dataKendaraan[$i]['biaya'] = hitungBiayaParkir(
         $dataKendaraan[$i]['tipe'],
         (int) $dataKendaraan[$i]['durasi']
@@ -13,6 +20,7 @@ for ($i = 0; $i < count($dataKendaraan); $i++) {
 }
 
 $stat = hitungStatistik($dataKendaraan);
+$ketersediaan = hitungKetersediaanParkir($dataKendaraan);
 $pesanError = $_SESSION['error'] ?? [];
 $pesanSukses = $_SESSION['sukses'] ?? '';
 unset($_SESSION['error'], $_SESSION['sukses']);
@@ -68,10 +76,25 @@ function e($value): string
         <div class="stat-card"><p>Pendapatan Kendaraan Keluar</p><h2><?= formatRupiah($stat['pendapatan']) ?></h2></div>
     </section>
 
+    <section class="stats" aria-label="Ketersediaan tempat parkir">
+        <div class="stat-card">
+            <p>Ketersediaan Parkir Mobil</p>
+            <h2><?= $ketersediaan['Mobil']['tersedia'] ?> / <?= $ketersediaan['Mobil']['kapasitas'] ?></h2>
+            <p class="muted"><?= $ketersediaan['Mobil']['terpakai'] ?> sedang digunakan</p>
+        </div>
+        <div class="stat-card">
+            <p>Ketersediaan Parkir Motor</p>
+            <h2><?= $ketersediaan['Motor']['tersedia'] ?> / <?= $ketersediaan['Motor']['kapasitas'] ?></h2>
+            <p class="muted"><?= $ketersediaan['Motor']['terpakai'] ?> sedang digunakan</p>
+        </div>
+    </section>
+
     <section class="panel" id="input-kendaraan">
         <h2>Input Kendaraan Masuk</h2>
         <p class="muted" style="margin-top:-10px;margin-bottom:20px;font-size:13px;">Tarif Motor Rp2.000/jam dan Mobil Rp5.000/jam. Diskon 10% berlaku untuk durasi minimal 10 jam.</p>
-        <form action="proses.php" method="post">
+        <form action="proses.php" method="post" id="form-kendaraan">
+            <input type="hidden" name="masuk_epoch" id="masuk-epoch">
+            <input type="hidden" name="masuk_lokal" id="masuk-lokal">
             <div class="form-grid">
                 <div class="form-group">
                     <label for="plat">Nomor Plat Kendaraan</label>
@@ -84,10 +107,6 @@ function e($value): string
                         <option value="Motor">Motor</option>
                         <option value="Mobil">Mobil</option>
                     </select>
-                </div>
-                <div class="form-group">
-                    <label for="durasi">Estimasi Durasi (jam)</label>
-                    <input type="number" id="durasi" name="durasi" min="1" max="24" step="1" placeholder="1–24 jam" required>
                 </div>
                 <div class="form-group">
                     <label for="tarif">Tarif per Jam (Rp)</label>
@@ -108,10 +127,10 @@ function e($value): string
         </div>
         <div class="table-wrapper">
             <table>
-                <thead><tr><th>No.</th><th>Nomor Plat</th><th>Tipe</th><th>Jam Masuk</th><th>Durasi</th><th>Biaya Estimasi</th><th>Status</th><th>Aksi</th></tr></thead>
+                <thead><tr><th>No.</th><th>Nomor Plat</th><th>Tipe</th><th>Tanggal Masuk</th><th>Jam Masuk</th><th>Tanggal Keluar</th><th>Jam Keluar</th><th>Durasi</th><th>Biaya Estimasi</th><th>Status</th><th>Aksi</th></tr></thead>
                 <tbody>
                 <?php if (count($dataKendaraan) === 0): ?>
-                    <tr><td colspan="8" style="text-align:center;padding:25px;">Belum ada data kendaraan.</td></tr>
+                    <tr><td colspan="11" style="text-align:center;padding:25px;">Belum ada data kendaraan.</td></tr>
                 <?php else: ?>
                     <?php
                     // FOR: menampilkan daftar kendaraan dalam tabel (kompetensi P7).
@@ -122,14 +141,19 @@ function e($value): string
                         <td><?= $i + 1 ?></td>
                         <td><?= e($kendaraan['plat']) ?></td>
                         <td><?= e($kendaraan['tipe']) ?></td>
-                        <td><?= e($kendaraan['masuk']) ?></td>
+                        <td><?= e(isset($kendaraan['masuk']) ? substr($kendaraan['masuk'], 0, 10) : '-') ?></td>
+                        <td><?= e(isset($kendaraan['masuk']) ? substr($kendaraan['masuk'], 11, 8) : '-') ?></td>
+                        <td><?= e(isset($kendaraan['keluar']) ? substr($kendaraan['keluar'], 0, 10) : '-') ?></td>
+                        <td><?= e(isset($kendaraan['keluar']) ? substr($kendaraan['keluar'], 11, 8) : '-') ?></td>
                         <td><?= formatDurasi((int) $kendaraan['durasi']) ?></td>
                         <td><?= formatRupiah((int) $kendaraan['biaya']) ?></td>
                         <td><span class="status <?= $kendaraan['status'] === 'Parkir' ? 'status-parkir' : 'status-keluar' ?>"><?= e($kendaraan['status']) ?></span></td>
                         <td>
                             <?php if ($kendaraan['status'] === 'Parkir'): ?>
-                                <form action="keluar.php" method="post" onsubmit="return confirm('Catat kendaraan <?= e($kendaraan['plat']) ?> keluar dari parkir?');" style="display:inline;">
+                                <form action="keluar.php" method="post" onsubmit="return catatWaktuKeluar(this, '<?= e($kendaraan['plat']) ?>');" style="display:inline;">
                                     <input type="hidden" name="plat" value="<?= e($kendaraan['plat']) ?>">
+                                    <input type="hidden" name="keluar_epoch">
+                                    <input type="hidden" name="keluar_lokal">
                                     <button type="submit" class="button button-danger">Keluarkan</button>
                                 </form>
                             <?php else: ?>
@@ -159,6 +183,35 @@ function e($value): string
     };
     const tipe = document.getElementById('tipe');
     const tarif = document.getElementById('tarif');
+    function waktuLaptopSekarang() {
+        const sekarang = new Date();
+        const duaDigit = nilai => String(nilai).padStart(2, '0');
+        const lokal = [
+            sekarang.getFullYear(),
+            duaDigit(sekarang.getMonth() + 1),
+            duaDigit(sekarang.getDate())
+        ].join('-') + ' ' + [
+            duaDigit(sekarang.getHours()),
+            duaDigit(sekarang.getMinutes()),
+            duaDigit(sekarang.getSeconds())
+        ].join(':');
+        return { epoch: Math.floor(sekarang.getTime() / 1000), lokal: lokal };
+    }
+    document.getElementById('form-kendaraan').addEventListener('submit', function () {
+        const waktu = waktuLaptopSekarang();
+        document.getElementById('masuk-epoch').value = waktu.epoch;
+        document.getElementById('masuk-lokal').value = waktu.lokal;
+    });
+    function catatWaktuKeluar(form, plat) {
+        if (!confirm('Catat kendaraan ' + plat + ' keluar dari parkir?')) {
+            return false;
+        }
+        const waktu = waktuLaptopSekarang();
+        form.elements.keluar_epoch.value = waktu.epoch;
+        form.elements.keluar_lokal.value = waktu.lokal;
+        return true;
+    }
+
     tipe.addEventListener('change', function () {
         tarif.value = Object.prototype.hasOwnProperty.call(tarifPerJam, this.value)
             ? new Intl.NumberFormat('id-ID').format(tarifPerJam[this.value])

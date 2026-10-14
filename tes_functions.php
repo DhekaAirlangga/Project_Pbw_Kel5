@@ -42,7 +42,7 @@ do {
 } while ($posisiDurasi < count($percobaanDurasi));
 
 // Demo class/object (P2).
-$demoKendaraan = new Kendaraan('b1234abc', 'Motor', 3);
+$demoKendaraan = new Kendaraan('b1234abc', 'Motor', time(), date('Y-m-d H:i:s'));
 
 ?>
 <!DOCTYPE html>
@@ -112,6 +112,6 @@ $demoKendaraan = new Kendaraan('b1234abc', 'Motor', 3);
     <p>Durasi valid yang diterima: <strong><?= $durasiDiterima === null ? 'Belum ada' : $durasiDiterima . ' jam' ?></strong></p>
 
     <h3>Demo Class dan Object Kendaraan</h3>
-    <p>Object <?= htmlspecialchars($demoKendaraan->getPlat()) ?> (<?= htmlspecialchars($demoKendaraan->getTipe()) ?>), durasi <?= $demoKendaraan->getDurasi() ?> jam, biaya <?= htmlspecialchars(formatRupiah($demoKendaraan->getBiaya())) ?>.</p>
+    <p>Object <?= htmlspecialchars($demoKendaraan->getPlat()) ?> (<?= htmlspecialchars($demoKendaraan->getTipe()) ?>), durasi dihitung saat kendaraan keluar.</p>
 </body>
 </html>

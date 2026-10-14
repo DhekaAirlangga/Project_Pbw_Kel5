@@ -18,7 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // 1. Ambil data dari form ke variabel
 $platMentah = trim($_POST['plat'] ?? '');
 $tipe = trim($_POST['tipe'] ?? '');
-$durasiMentah = trim($_POST['durasi'] ?? '');
+$masukEpochMentah = trim($_POST['masuk_epoch'] ?? '');
+$masukLokal = trim($_POST['masuk_lokal'] ?? '');
 
 // 2. Rapikan plat nomor (string)
 $plat = normalisasiPlat($platMentah);
@@ -32,8 +33,11 @@ if (!validasiPlat($plat)) {
 if (!validasiTipe($tipe)) {
     $error[] = 'Tipe kendaraan harus Motor atau Mobil.';
 }
-if (!validasiDurasi($durasiMentah)) {
-    $error[] = 'Durasi harus berupa bilangan bulat 1 sampai ' . DURASI_MAKSIMAL . ' jam.';
+if (filter_var($masukEpochMentah, FILTER_VALIDATE_INT) === false
+    || (int) $masukEpochMentah <= 0
+    || preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $masukLokal) !== 1
+) {
+    $error[] = 'Waktu masuk dari perangkat tidak valid. Muat ulang halaman lalu coba lagi.';
 }
 
 $data = $_SESSION['kendaraan'] ?? dataContoh();
@@ -52,6 +56,12 @@ while ($idx < count($data)) {
 if ($platKembar) {
     $error[] = 'Kendaraan ' . $plat . ' masih berstatus Parkir.';
 }
+if (validasiTipe($tipe)) {
+    $ketersediaan = hitungKetersediaanParkir($data);
+    if ($ketersediaan[$tipe]['tersedia'] === 0) {
+        $error[] = 'Kapasitas parkir ' . strtolower($tipe) . ' sudah penuh.';
+    }
+}
 
 // 5. Jika ada error, kembali ke form membawa pesan
 if ($error) {
@@ -62,10 +72,10 @@ if ($error) {
 
 try {
     // OOP: buat object Kendaraan setelah data lolos validasi.
-    $kendaraan = new Kendaraan($plat, $tipe, (int) $durasiMentah);
+    $kendaraan = new Kendaraan($plat, $tipe, (int) $masukEpochMentah, $masukLokal);
     $data[] = $kendaraan->toArray();
     $_SESSION['kendaraan'] = $data;
-    $_SESSION['sukses'] = 'Kendaraan ' . $kendaraan->getPlat() . ' berhasil ditambahkan. Biaya estimasi: ' . formatRupiah($kendaraan->getBiaya()) . '.';
+    $_SESSION['sukses'] = 'Kendaraan ' . $kendaraan->getPlat() . ' berhasil ditambahkan. Durasi dan biaya dihitung saat kendaraan keluar.';
 } catch (InvalidArgumentException $e) {
     $_SESSION['error'] = [$e->getMessage()];
 }
