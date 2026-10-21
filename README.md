@@ -204,8 +204,6 @@ Tambahkan screenshot asli dari aplikasi ke folder `screenshots/`, lalu gunakan n
 6. `testing-fungsi.png` — hasil pengujian fungsi pada `tes_functions.php`.
 <img src="screenshots/05-output-loop.jpeg" alt="Screenshot Sebelum" width="600">
 
-Screenshot harus diambil dari aplikasi yang benar-benar dijalankan, bukan gambar ilustrasi.
-
 ---
 
 ## 🔗 Repository
@@ -218,6 +216,6 @@ https://github.com/DhekaAirlangga/Project_Pbw_Kel5.git
 
 ## 📌 Kesimpulan
 
-PARKIRKU merupakan aplikasi simulasi pengelolaan parkir berbasis PHP Native yang menerapkan konsep dasar Pemrograman Berbasis Web. Aplikasi menyediakan fitur input kendaraan, validasi nomor polisi, perhitungan biaya parkir, pencatatan kendaraan keluar, statistik, dan laporan.
+PARKIRKU merupakan aplikasi simulasi pengelolaan parkir berbasis PHP Native yang menerapkan konsep dasar Pemrograman Berbasis Web. Aplikasi menyediakan fitur input kendaraan, validasi nomor polisi, perhitungan biaya parkir, pencatatan kendaraan keluar, dan laporan.
 
-Melalui proyek ini, anggota kelompok dapat mempraktikkan penggunaan fungsi, array, string, perulangan, session, dan OOP dalam sebuah aplikasi web sederhana.
+Melalui proyek ini, kelompok kami dapat mempraktikkan penggunaan fungsi, array, string, perulangan, session, dan OOP dalam sebuah aplikasi web sederhana.
