@@ -202,7 +202,7 @@ Tambahkan screenshot asli dari aplikasi ke folder `screenshots/`, lalu gunakan n
 5. `laporan.png` — tampilan laporan parkir.
 <img src="screenshots/06-laporan.jpeg" alt="Screenshot Sebelum" width="600">
 6. `testing-fungsi.png` — hasil pengujian fungsi pada `tes_functions.php`.
-<img src="screenshots/05-output-loop.png" alt="Screenshot Sebelum" width="600">
+<img src="screenshots/05-output-loop.jpeg" alt="Screenshot Sebelum" width="600">
 
 Screenshot harus diambil dari aplikasi yang benar-benar dijalankan, bukan gambar ilustrasi.
 
