@@ -1,0 +1,7 @@
+ALTER TABLE users_civitas
+    ADD COLUMN email VARCHAR(254) NULL UNIQUE AFTER nama,
+    ADD COLUMN foto_profil VARCHAR(255) NULL AFTER email;
+
+ALTER TABLE users_mitra
+    ADD COLUMN email VARCHAR(254) NULL UNIQUE AFTER pic,
+    ADD COLUMN foto_profil VARCHAR(255) NULL AFTER email;

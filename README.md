@@ -1,118 +1,223 @@
 # Sistem Parkir Kendaraan (PARKIRKU)
+
 > Tugas Mata Kuliah Pemrograman Berbasis Web (PBW) — Kelompok 5
 
-Aplikasi web sederhana untuk pengelolaan kendaraan masuk, durasi, perhitungan biaya parkir, serta validasi data berbasis PHP Native.
+PARKIRKU adalah aplikasi web sederhana berbasis PHP Native untuk simulasi pengelolaan kendaraan masuk dan keluar, validasi nomor polisi, perhitungan biaya parkir, serta pencatatan laporan kendaraan.
+
+Aplikasi ini dibuat sebagai penerapan materi Pemrograman Berbasis Web, meliputi variabel, operator, fungsi, percabangan, perulangan, array, pengolahan string, session, dan Object-Oriented Programming (OOP).
 
 ---
 
-## 👥 Anggota Kelompok (Kelompok 5)
+## 👥 Anggota Kelompok
 
 1. **Bryan Ananda Saputra Hulu** (4524210020)
 2. **Dheka Airlangga** (4524210027)
-3. **Farhan Ridwan** (4524210037)
-4. **Muhammad Bachtiar** (4524210141)
+3. **Farhan Ridwan Badhawi** (4524210037)
+4. **Muhamad Bachtiar** (4524210141)
 
 ---
 
 ## 🚀 Panduan Menjalankan Proyek
 
 ### 1. Prasyarat
-* PHP versi 7.4 ke atas (Disarankan PHP 8.x).
-* Web browser (Google Chrome, Microsoft Edge, Mozilla Firefox, dll.).
 
-### 2. Cara Menjalankan via Terminal / CLI
-Buka terminal atau PowerShell di dalam folder proyek ini, lalu jalankan:
-```bash
-php -S localhost:8000
-```
-Buka browser dan akses alamat:
-```
-http://localhost:8000
-```
+- PHP versi 7.4 atau lebih baru.
+- Web browser, seperti Google Chrome, Microsoft Edge, atau Mozilla Firefox.
+- XAMPP jika ingin menjalankan aplikasi melalui Apache.
 
-### 3. Cara Menjalankan via XAMPP
-1. Pindahkan atau salin folder proyek ini ke dalam folder `htdocs` XAMPP:
-   `C:\xampp\htdocs\Project_Pbw_Kel5`
-2. Jalankan Apache di panel kontrol XAMPP.
+### 2. Menjalankan melalui Terminal
+
+1. Buka Terminal atau PowerShell pada folder proyek yang berisi `index.php`.
+2. Jalankan perintah berikut:
+
+   ```bash
+   php -S localhost:8000
+   ```
+
 3. Buka browser dan akses:
-   `http://localhost/Project_Pbw_Kel5/index.php`
+
+   ```text
+   http://localhost:8000
+   ```
+
+### 3. Menjalankan melalui XAMPP
+
+1. Salin folder proyek ke direktori `htdocs` XAMPP.
+2. Jalankan Apache melalui XAMPP Control Panel.
+3. Buka browser dan akses alamat sesuai nama folder proyek, misalnya:
+
+   ```text
+   http://localhost/Project_Pbw_Kel5/index.php
+   ```
+
+**Catatan:** Data kendaraan disimpan menggunakan PHP Session, bukan database. Data contoh disediakan melalui fungsi `dataContoh()` agar halaman dapat menampilkan data awal ketika session kendaraan belum tersedia.
 
 ---
 
-## 📖 Dokumentasi Aplikasi
+## 📋 Fitur Aplikasi
 
-### 1. Dashboard & input kendaraan
+### 1. Dashboard dan Input Kendaraan
 
-Dashboard menampilkan ringkasan kendaraan, pendapatan, kapasitas slot Motor dan Mobil, serta formulir untuk memasukkan nomor plat dan tipe kendaraan. Waktu masuk dicatat otomatis ketika kendaraan ditambahkan.
+Halaman utama menampilkan statistik kendaraan, informasi tarif, formulir input, dan tabel data parkir.
 
-![Dashboard dan input kendaraan](Dokumentasi/Dashboard%20%26%20Input%20Kendaraan.png)
+Pengguna dapat memasukkan nomor polisi dan memilih jenis kendaraan. Waktu parkir dicatat otomatis berdasarkan jam lokal perangkat; durasi dan biaya dihitung ketika kendaraan keluar.
 
-### 2. Data kendaraan
+### 2. Normalisasi dan Validasi Nomor Polisi
 
-Tabel data kendaraan menampilkan waktu masuk, durasi parkir, estimasi biaya, status, dan tombol **Keluar** untuk menyelesaikan transaksi kendaraan yang masih parkir.
+Sistem merapikan nomor polisi dengan mengubah huruf menjadi kapital, menghapus spasi atau tanda baca yang tidak diperlukan, serta membentuk format nomor polisi yang konsisten.
 
-![Data kendaraan](Dokumentasi/Data%20Kendaraan.png)
+Contoh:
 
-### 3. Laporan
+```text
+Input  : b1234abc
+Output : B 1234 ABC
+```
 
-Halaman laporan berisi transaksi kendaraan yang sudah keluar, termasuk waktu masuk dan keluar, durasi, jam tagihan, biaya, serta ringkasan pendapatan.
+Sistem juga memvalidasi format nomor polisi dan jenis kendaraan sebelum data diterima.
 
-![Laporan parkir](Dokumentasi/laporan%20(2).png)
+### 3. Perhitungan Biaya Parkir
 
-### 4. Pengujian valid dan tidak valid
+Tarif parkir ditentukan berdasarkan jenis kendaraan dan durasi aktual.
 
-#### 4.1 Valid
+| Jenis Kendaraan | Tarif per Jam |
+|---|---:|
+| Motor | Rp2.000 |
+| Mobil | Rp5.000 |
 
-Masukkan nomor plat yang sesuai format dan pilih tipe kendaraan dengan slot tersedia. Sistem menerima kendaraan dan menampilkan pesan keberhasilan serta waktu masuk.
+Durasi dibulatkan ke atas per jam yang mulai digunakan, dengan minimal 1 jam. Diskon sebesar 10% diberikan untuk durasi minimal 10 jam; durasi tidak dibatasi 24 jam.
 
-![Pengujian input valid](Dokumentasi/Input%20valid.png)
+Contoh perhitungan:
 
-#### 4.2 Tidak valid
+- Motor selama 2 jam: Rp4.000.
+- Mobil selama 2 jam: Rp10.000.
+- Motor selama 10 jam: Rp18.000 setelah diskon 10%.
 
-Masukkan nomor plat dengan format yang tidak sesuai. Sistem menolak data dan menampilkan pesan kesalahan validasi.
+Perhitungan tersebut menggunakan durasi aktual sejak kendaraan masuk hingga keluar.
 
-![Pengujian input tidak valid](Dokumentasi/Input%20tidak%20valid.png)
+### 4. Data Kendaraan dan Proses Keluar
 
----
+Form tidak meminta estimasi durasi maupun menampilkan jam masuk. Waktu masuk dan keluar dicatat otomatis dari jam lokal perangkat yang mengirimkan transaksi. Durasi dihitung dari selisih waktu masuk dan keluar; setiap bagian jam yang sudah dimulai dihitung sebagai satu jam. Tabel kendaraan menampilkan nomor polisi, jenis kendaraan, jam masuk, jam keluar (setelah admin mencatat kendaraan keluar), durasi berjalan/aktual, biaya, dan status parkir.
 
-## 🧪 Skenario Uji Web
+Tombol **Keluar** memproses kendaraan melalui `keluar.php`. Sistem mengubah status kendaraan menjadi `Keluar`, mencatat waktu lokal perangkat saat keluar, menghitung durasi aktual, dan menghitung biaya akhir.
 
-Jalankan skenario berikut melalui browser setelah aplikasi aktif. Untuk menguji kapasitas penuh, gunakan sesi/data uji yang masih memiliki slot tersedia, lalu tambahkan kendaraan sampai kapasitas tipe tersebut tercapai.
+Sistem juga mencegah kendaraan dengan nomor polisi yang sama ditambahkan kembali ketika kendaraan tersebut masih berstatus `Parkir`.
 
-| No. | Modul / Fitur | Skenario Uji (Langkah-langkah) | Hasil yang Diharapkan (Expected Result) | Status |
-| :---: | :--- | :--- | :--- | :--- |
-| 1 | **Input Kendaraan** | 1. Buka halaman utama web.<br>2. Masukkan nomor plat yang valid (contoh: `B 1234 ABC`).<br>3. Pilih tipe kendaraan yang slotnya masih tersedia, misalnya **Mobil**.<br>4. Klik **+ Tambah Kendaraan**. | Data kendaraan berhasil disimpan dan tampil di tabel data parkir dengan status **Parkir** serta waktu masuk tercatat otomatis. Slot untuk tipe tersebut berkurang satu. | [✔] Lulus<br>[ ] Gagal |
-| 2 | **Validasi Form Kosong** | 1. Buka halaman utama web.<br>2. Biarkan kolom nomor plat kosong.<br>3. Klik **+ Tambah Kendaraan**. | Form menolak pengiriman data dan browser menampilkan validasi bahwa nomor plat wajib diisi. Tidak ada kendaraan baru yang disimpan. | [✔] Lulus<br>[ ] Gagal |
-| 3 | **Kapasitas Slot Penuh** | 1. Tambahkan kendaraan tipe **Mobil** sampai kapasitas maksimal tercapai (20 slot).<br>2. Periksa informasi slot pada dashboard.<br>3. Coba tambahkan satu kendaraan Mobil lagi. | Dashboard menampilkan **Slot Mobil: Penuh**, pilihan Mobil dinonaktifkan, dan server menolak kendaraan tambahan dengan pesan bahwa slot Mobil sudah penuh. | [✔] Lulus<br>[ ] Gagal |
-| 4 | **Proses Keluar & Tarif** | 1. Klik tombol **Keluar** pada kendaraan yang masih berstatus Parkir.<br>2. Periksa waktu keluar dan durasi pada tabel.<br>3. Buka halaman **Laporan** dan periksa transaksi kendaraan tersebut. | Sistem mencatat waktu keluar, menghitung durasi dari waktu masuk dan keluar, membulatkan jam tagihan ke atas (minimal satu jam), lalu menghitung tarif sesuai tipe kendaraan. Status berubah menjadi **Keluar**, kendaraan muncul pada laporan, dan slotnya tersedia kembali. | [✔] Lulus<br>[ ] Gagal |
+### 5. Laporan Parkir
 
-Kapasitas awal yang digunakan untuk skenario uji adalah **Motor: 50 slot** dan **Mobil: 20 slot**. Data parkir disimpan dalam session browser, jadi gunakan browser/session yang sama saat menguji proses masuk, keluar, dan laporan.
+Halaman `laporan.php` menampilkan data kendaraan beserta ringkasan statistik dan pendapatan dari kendaraan yang sudah berstatus `Keluar`.
 
----
+Fitur laporan meliputi:
 
-## 📂 Struktur Logika PHP Utama
-
-| Komponen | Nama Fungsi / Class | Penjelasan |
-| :--- | :--- | :--- |
-| **Kalkulasi Durasi** | `hitungDurasiMenit($masukAt, $keluarAt)` | Menghitung lama parkir dari selisih timestamp masuk dan keluar dalam menit. |
-| **Kalkulasi Biaya** | `hitungBiayaParkirMenit($tipe, $durasiMenit)` | Tarif Mobil Rp 5.000/jam dan Motor Rp 2.000/jam. Jam parsial dibulatkan ke atas, minimal 1 jam; diskon 10% mulai 10 jam. |
-| **Slot & Kapasitas** | `KAPASITAS_PARKIR`, `hitungSlotParkir($data)` | Menetapkan kapasitas Motor 50 dan Mobil 20 slot, lalu menghitung slot terisi/tersisa dari kendaraan berstatus `Parkir`. |
-| **Sanitasi Plat** | `normalisasiPlat($plat)` | Membersihkan spasi/simbol, mengubah ke huruf besar, dan menyeragamkan plat (contoh: `b1234abc` menjadi `B 1234 ABC`). |
-| **Validasi Format** | `validasiPlat($plat)` | Menguji plat dengan regex (1-2 huruf wilayah, 1-4 angka, 1-3 huruf seri). Mengembalikan `true`/`false`. |
-| **OOP Entitas** | `class Kendaraan` | Menyimpan timestamp masuk, serta mencatat waktu keluar dan menghitung durasi/biaya melalui `selesaikan()`. Data disimpan sebagai array melalui `toArray()`. |
-| **Penyimpanan Sesi** | `$_SESSION['kendaraan']` | Menyimpan data kendaraan parkir dan yang sudah keluar. |
-| **Aksi keluar** | `proses.php` | Mengubah status kendaraan menjadi `Keluar`, mencatat timestamp, lalu menghitung durasi dan biaya final. |
-| **Laporan** | `laporan.php` | Hanya menampilkan kendaraan yang sudah berstatus `Keluar`, beserta ringkasan transaksi selesai dan pendapatan. |
-| **Perulangan** | `while` / `do-while` | `while` digunakan untuk tabel di `index.php`; `do-while` digunakan untuk tabel laporan. |
-
-Waktu masuk/keluar dicatat oleh server dalam zona `Asia/Jakarta`. Durasi aktif dan estimasi biaya di tabel diperbarui oleh JavaScript di browser; perhitungan final dan waktu transaksi ditentukan kembali di server saat tombol **Keluar** ditekan.
-
-Kapasitas slot ditampilkan di dashboard. Form menonaktifkan pilihan tipe yang penuh dan memberi peringatan, sementara `proses.php` memvalidasi kapasitas kembali di server sebelum menerima kendaraan baru.
+- Filter data berdasarkan status `Semua`, `Parkir`, atau `Keluar`.
+- Informasi jumlah kendaraan.
+- Ringkasan pendapatan.
+- Tombol untuk mencetak laporan melalui browser.
 
 ---
 
-## 📊 Laporan Singkat Pengujian & Status Proyek
+## 🧩 Struktur File dan Logika PHP
 
-- **Status Proyek:** Dalam tahap pengembangan.
-- **Ringkasan Evaluasi:** Fitur utama—input kendaraan, pencatatan waktu, perhitungan tarif, kapasitas slot, dan laporan—telah diuji dan berjalan sesuai fungsinya.
-- **Catatan Pengujian:** Pengujian mencakup input valid dan tidak valid, penolakan saat slot penuh, serta proses keluar dan perhitungan biaya. Hasilnya sesuai harapan; rincian langkah dan screenshot tersedia pada bagian dokumentasi di atas.
+| File | Fungsi |
+|---|---|
+| `index.php` | Menampilkan dashboard, formulir input, statistik, dan tabel kendaraan. |
+| `functions.php` | Menyediakan fungsi normalisasi, validasi, perhitungan biaya, format rupiah, dan statistik. |
+| `proses.php` | Memproses input kendaraan, melakukan validasi, memeriksa nomor polisi ganda, dan menyimpan data ke session. |
+| `keluar.php` | Memproses kendaraan keluar dan memperbarui status kendaraan. |
+| `laporan.php` | Menampilkan laporan kendaraan, filter status, dan ringkasan pendapatan. |
+| `classes/Kendaraan.php` | Mendefinisikan class `Kendaraan` untuk merepresentasikan data kendaraan menggunakan OOP. |
+| `tes_functions.php` | Menampilkan pengujian fungsi, simulasi perulangan, dan demonstrasi object `Kendaraan`. |
+| `assets/css/style.css` | Mengatur tampilan dan desain halaman aplikasi. |
+
+### Fungsi Utama
+
+| Fungsi | Penjelasan |
+|---|---|
+| `ambilTarif($tipe)` | Mengambil tarif sesuai jenis kendaraan. |
+| `hitungBiayaParkir($tipe, $durasi)` | Menghitung biaya parkir dan diskon jika memenuhi ketentuan. |
+| `normalisasiPlat($plat)` | Membersihkan dan menyeragamkan format nomor polisi. |
+| `validasiPlat($plat)` | Memeriksa format nomor polisi menggunakan regular expression. |
+| `validasiDurasi($durasi)` | Memeriksa durasi berupa bilangan bulat antara 1 dan 24 jam. |
+| `validasiTipe($tipe)` | Memeriksa apakah jenis kendaraan adalah Motor atau Mobil. |
+| `formatRupiah($angka)` | Mengubah angka menjadi format mata uang rupiah. |
+| `formatDurasi($jam)` | Menampilkan durasi dalam format jam. |
+| `hitungStatistik($data)` | Menghitung total kendaraan, kendaraan yang sedang parkir, kendaraan keluar, dan pendapatan. |
+| `dataContoh()` | Menyediakan data contoh untuk tampilan awal aplikasi. |
+
+### Penerapan Materi PBW
+
+- **Variabel dan operator:** digunakan untuk mengolah data kendaraan dan menghitung biaya.
+- **Fungsi:** digunakan untuk memisahkan proses validasi, perhitungan, dan pengolahan data.
+- **String:** digunakan untuk membersihkan dan memformat nomor polisi.
+- **Array:** digunakan untuk menyimpan serta mengolah daftar kendaraan.
+- **Percabangan:** digunakan untuk validasi dan menentukan hasil proses.
+- **Perulangan `while`:** digunakan untuk memeriksa nomor polisi yang masih berstatus parkir di `proses.php`.
+- **Perulangan `for`:** digunakan untuk menampilkan atau menelusuri data kendaraan.
+- **Perulangan `do-while`:** digunakan untuk menampilkan data pada tabel laporan.
+- **OOP:** class `Kendaraan` digunakan untuk memvalidasi data dan membentuk object kendaraan.
+- **Session:** digunakan untuk mempertahankan data kendaraan selama session berlangsung.
+
+---
+
+## 🧪 Skenario Pengujian
+
+Pengujian berikut dapat dilakukan melalui browser setelah aplikasi dijalankan.
+
+| No. | Fitur | Skenario Pengujian | Hasil yang Diharapkan |
+|---:|---|---|---|
+| 1 | Input kendaraan | Memasukkan nomor polisi yang valid, memilih tipe kendaraan, dan mengisi durasi. | Kendaraan berhasil ditambahkan dan muncul pada tabel. |
+| 2 | Validasi form | Mengosongkan nomor polisi lalu mengirim formulir. | Formulir menolak input kosong. |
+| 3 | Validasi nomor polisi | Memasukkan nomor polisi dengan format yang tidak sesuai. | Sistem menampilkan pesan kesalahan validasi. |
+| 4 | Perhitungan biaya | Memasukkan jenis kendaraan dan durasi tertentu. | Biaya sesuai tarif dan ketentuan diskon. |
+| 5 | Nomor polisi ganda | Menambahkan nomor polisi yang masih berstatus `Parkir`. | Sistem menolak penambahan kendaraan yang sama. |
+| 6 | Proses keluar | Menekan tombol `Keluar` pada kendaraan yang masih parkir. | Status berubah menjadi `Keluar` dan kendaraan masuk dalam laporan. |
+| 7 | Laporan | Membuka halaman laporan dan mencoba filter status. | Data ditampilkan sesuai filter yang dipilih. |
+| 8 | Pengujian fungsi | Membuka `tes_functions.php`. | Hasil pengujian validasi, perhitungan, perulangan, dan class dapat diamati. |
+
+**Status pengujian:** Isi hasil pengujian berdasarkan percobaan langsung pada aplikasi. Tandai setiap skenario lulus atau gagal sesuai hasil yang benar-benar diperoleh.
+
+---
+
+## ⚠️ Catatan dan Batasan Aplikasi
+
+1. Aplikasi menggunakan PHP Session untuk menyimpan data, sehingga belum menggunakan database permanen.
+2. Durasi parkir dihitung otomatis dari waktu masuk hingga waktu keluar, dengan pembulatan ke atas untuk setiap jam yang mulai digunakan.
+3. Waktu masuk dan keluar dicatat otomatis berdasarkan jam lokal perangkat pengguna.
+4. Biaya akhir dihitung menggunakan durasi aktual berdasarkan selisih waktu masuk dan keluar.
+5. Kapasitas slot parkir dan pembaruan durasi secara real-time belum dicantumkan sebagai fitur karena belum terkonfirmasi pada source code yang diperiksa.
+
+---
+
+## 📸 Dokumentasi dan Bukti Hasil
+
+Tambahkan screenshot asli dari aplikasi ke folder `screenshots/`, lalu gunakan nama file berikut agar dokumentasi mudah diatur.
+
+1. `dashboard.png` — tampilan dashboard dan formulir input.
+<img src="screenshots/01-dashboard.jpeg" alt="Screenshot Sebelum" width="600">
+2. `input-berhasil.png` — hasil penambahan kendaraan.
+<img src="screenshots/02-input-berhasil.jpeg" alt="Screenshot Sebelum" width="600">
+3. `validasi-error.png` — pesan kesalahan input.
+<img src="screenshots/03-validasi-error.jpeg" alt="Screenshot Sebelum" width="600">
+4. `kendaraan-keluar.png` — hasil proses kendaraan keluar.
+<img src="screenshots/04-kendaraan-keluar.png" alt="Screenshot Sebelum" width="600">
+5. `laporan.png` — tampilan laporan parkir.
+<img src="screenshots/06-laporan.jpeg" alt="Screenshot Sebelum" width="600">
+6. `testing-fungsi.png` — hasil pengujian fungsi pada `tes_functions.php`.
+<img src="screenshots/05-output-loop.png" alt="Screenshot Sebelum" width="600">
+
+Screenshot harus diambil dari aplikasi yang benar-benar dijalankan, bukan gambar ilustrasi.
+
+---
+
+## 🔗 Repository
+
+Source code proyek tersedia di GitHub:
+
+https://github.com/DhekaAirlangga/Project_Pbw_Kel5.git
+
+---
+
+## 📌 Kesimpulan
+
+PARKIRKU merupakan aplikasi simulasi pengelolaan parkir berbasis PHP Native yang menerapkan konsep dasar Pemrograman Berbasis Web. Aplikasi menyediakan fitur input kendaraan, validasi nomor polisi, perhitungan biaya parkir, pencatatan kendaraan keluar, statistik, dan laporan.
+
+Melalui proyek ini, anggota kelompok dapat mempraktikkan penggunaan fungsi, array, string, perulangan, session, dan OOP dalam sebuah aplikasi web sederhana.
